@@ -78,6 +78,7 @@ public class ImageTransformer {
      *
      * @return the mirror image of the instance.
      */
+    // Test a github
     public Image mirror() {
         int width = this.width; // 直接使用类的成员变量
         int height = this.height; // 直接使用类的成员变量
