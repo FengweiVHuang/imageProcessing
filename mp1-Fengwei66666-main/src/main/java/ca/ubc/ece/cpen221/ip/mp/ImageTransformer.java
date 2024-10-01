@@ -6,7 +6,9 @@ import ca.ubc.ece.cpen221.ip.core.Rectangle;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 
 /**
  * This datatype (or class) provides operations for transforming an image.
@@ -104,17 +106,6 @@ public class ImageTransformer {
                 // Swap the colors of the left and right pixels
                 mirroredImage.setRGB(col, row, mirroredPixel);
                 mirroredImage.setRGB(mirroredCol, row, originalPixel);
-            }
-        }
-
-        // When the width is odd
-        if (width % 2 != 0) {
-            // Middle column
-            int middleCol = (int) Math.ceil((double) width / 2);
-            for (int row = 0; row < height; row++) {
-                int originalPixel = this.image.getRGB(middleCol, row);
-                // Keep the original color
-                mirroredImage.setRGB(middleCol, row, originalPixel);
             }
         }
 
@@ -378,8 +369,95 @@ public class ImageTransformer {
 
 
     public Image greenScreen(Color screenColour, Image backgroundImage) {
-        // TODO: Implement this method
-        return null;
+        int width = this.image.width();
+        int height = this.image.height();
+
+        // 用来标记已经访问过的像素
+        boolean[][] visited = new boolean[width][height];
+
+        // 变量记录边界矩形
+        int minX = width, minY = height, maxX = 0, maxY = 0;
+
+        // BFS 队列
+        Queue<int[]> queue = new LinkedList<>();
+
+        // 遍历图片，查找与 screenColour 匹配的像素，并找出最大连通区域
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                // 如果当前像素未访问且颜色匹配
+                if (!visited[x][y] && this.image.get(x, y).equals(screenColour)) {
+                    // 初始化 BFS
+                    queue.offer(new int[]{x, y});
+                    visited[x][y] = true;
+
+                    // 局部连通区域，寻找其边界
+                    while (!queue.isEmpty()) {
+                        int[] current = queue.poll();
+                        int currX = current[0];
+                        int currY = current[1];
+
+                        // 更新边界矩形
+                        minX = Math.min(minX, currX);
+                        minY = Math.min(minY, currY);
+                        maxX = Math.max(maxX, currX);
+                        maxY = Math.max(maxY, currY);
+
+                        // 四个方向的相邻像素
+                        int[][] directions = {{0, 1}, {0, -1}, {1, 0}, {-1, 0}};
+
+                        // 检查四个方向的相邻像素
+                        for (int[] direction : directions) {
+                            int newX = currX + direction[0];
+                            int newY = currY + direction[1];
+
+                            // 检查是否在图像范围内且未访问
+                            if (isInBounds(newX, newY, width, height) && !visited[newX][newY]) {
+                                // 如果颜色匹配，加入 BFS 队列
+                                if (this.image.get(newX, newY).equals(screenColour)) {
+                                    queue.offer(new int[]{newX, newY});
+                                    visited[newX][newY] = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 定义边界矩形宽度和高度
+        int rectWidth = maxX - minX + 1;
+        int rectHeight = maxY - minY + 1;
+
+        // 创建新图像，用背景图片替换指定区域的颜色
+        Image resultImage = new Image(width, height);
+
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                // 获取原始像素
+                Color originalPixel = this.image.get(x, y);
+
+                // 如果像素位于边界矩形内并且颜色匹配，则用背景图片替换
+                if (x >= minX && x <= maxX && y >= minY && y <= maxY && originalPixel.equals(screenColour)) {
+                    // 背景图片中的对应像素
+                    int bgX = (x - minX) % backgroundImage.width();
+                    int bgY = (y - minY) % backgroundImage.height();
+                    Color bgPixel = backgroundImage.get(bgX, bgY);
+
+                    // 替换为背景图片的像素
+                    resultImage.set(x, y, bgPixel);
+                } else {
+                    // 保留原始像素
+                    resultImage.set(x, y, originalPixel);
+                }
+            }
+        }
+
+        return resultImage;
+    }
+
+    // 辅助方法，检查坐标是否在图像范围内
+    private boolean isInBounds(int x, int y, int width, int height) {
+        return x >= 0 && x < width && y >= 0 && y < height;
     }
 
     /* ===== TASK 5 ===== */
