@@ -1,14 +1,10 @@
 package ca.ubc.ece.cpen221.ip.mp;
 
 import ca.ubc.ece.cpen221.ip.core.Image;
-import ca.ubc.ece.cpen221.ip.core.ImageProcessingException;
-import ca.ubc.ece.cpen221.ip.core.Rectangle;
 
 import java.awt.Color;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
+import java.awt.Point;
 
 /**
  * This datatype (or class) provides operations for transforming an image.
@@ -27,7 +23,8 @@ public class ImageTransformer {
     private Image image;
     private int width;
     private int height;
-
+    private boolean[][] visited;
+    private HashMap<Integer, int[]> regionData;
     /**
      * Creates an ImageTransformer with an image. The provided image is
      * <strong>never</strong> changed by any of the operations.
@@ -38,7 +35,8 @@ public class ImageTransformer {
         image = img;
         width = img.width();
         height = img.height();
-
+        this.visited = new boolean[image.width()][image.height()];
+        this.regionData = new HashMap<>();
     }
 
     /**
@@ -193,8 +191,8 @@ public class ImageTransformer {
     /* ===== TASK 2 ===== */
 
     public Image denoise() {
-        int width = this.width;   // 使用类的成员变量
-        int height = this.height; // 使用类的成员变量
+        int width = this.width;
+        int height = this.height;
 
 
         Image denoisedImage = new Image(width, height);
@@ -226,11 +224,11 @@ public class ImageTransformer {
 
 
                 if (neighborX >= 0 && neighborX < this.width && neighborY >= 0 && neighborY < this.height) {
-                    // 获取邻居像素的颜色
+
                     int neighborPixel = this.image.getRGB(neighborX, neighborY);
                     Color neighborColor = new Color(neighborPixel);
 
-                    // 将邻居像素的RGB通道值加入到列表中
+
                     redValues.add(neighborColor.getRed());
                     greenValues.add(neighborColor.getGreen());
                     blueValues.add(neighborColor.getBlue());
@@ -371,94 +369,214 @@ public class ImageTransformer {
     public Image greenScreen(Color screenColour, Image backgroundImage) {
         int width = this.image.width();
         int height = this.image.height();
+        int regionId = 0;
 
-        // 用来标记已经访问过的像素
-        boolean[][] visited = new boolean[width][height];
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                if (!visited[x][y] && getPixelColor(x, y).equals(screenColour)) {
 
-        // 变量记录边界矩形
-        int minX = width, minY = height, maxX = 0, maxY = 0;
-
-        // BFS 队列
-        Queue<int[]> queue = new LinkedList<>();
-
-        // 遍历图片，查找与 screenColour 匹配的像素，并找出最大连通区域
-        for (int x = 0; x < width; x++) {
-            for (int y = 0; y < height; y++) {
-                // 如果当前像素未访问且颜色匹配
-                if (!visited[x][y] && this.image.get(x, y).equals(screenColour)) {
-                    // 初始化 BFS
-                    queue.offer(new int[]{x, y});
-                    visited[x][y] = true;
-
-                    // 局部连通区域，寻找其边界
-                    while (!queue.isEmpty()) {
-                        int[] current = queue.poll();
-                        int currX = current[0];
-                        int currY = current[1];
-
-                        // 更新边界矩形
-                        minX = Math.min(minX, currX);
-                        minY = Math.min(minY, currY);
-                        maxX = Math.max(maxX, currX);
-                        maxY = Math.max(maxY, currY);
-
-                        // 四个方向的相邻像素
-                        int[][] directions = {{0, 1}, {0, -1}, {1, 0}, {-1, 0}};
-
-                        // 检查四个方向的相邻像素
-                        for (int[] direction : directions) {
-                            int newX = currX + direction[0];
-                            int newY = currY + direction[1];
-
-                            // 检查是否在图像范围内且未访问
-                            if (isInBounds(newX, newY, width, height) && !visited[newX][newY]) {
-                                // 如果颜色匹配，加入 BFS 队列
-                                if (this.image.get(newX, newY).equals(screenColour)) {
-                                    queue.offer(new int[]{newX, newY});
-                                    visited[newX][newY] = true;
-                                }
-                            }
-                        }
-                    }
+                    int area = FindRegion(x, y, screenColour, regionId);
+                    regionId++;
                 }
             }
         }
+        int[] largestRegion = findLargestRegion();
+        if (largestRegion == null) {
+            return this.image;
+        }
 
-        // 定义边界矩形宽度和高度
-        int rectWidth = maxX - minX + 1;
-        int rectHeight = maxY - minY + 1;
+        int minX = largestRegion[1];
+        int minY = largestRegion[2];
+        int maxX = largestRegion[3];
+        int maxY = largestRegion[4];
 
-        // 创建新图像，用背景图片替换指定区域的颜色
+
+        int regionWidth = maxX - minX + 1;
+        int regionHeight = maxY - minY + 1;
+
+
+        Image AdjustImage = new Image(regionWidth,regionHeight);
+
+
+        if (backgroundImage.width() > regionWidth || backgroundImage.height() > regionHeight) {
+
+            compressAndReplaceWithAverage( AdjustImage,  backgroundImage,  minX,  minY,  maxX,  maxY);
+        }
+
+        if (backgroundImage.width() < regionWidth || backgroundImage.height() < regionHeight) {
+
+            tileAndReplace(AdjustImage,  backgroundImage,  minX,  minY,  maxX,  maxY);
+        }
+
+        else {
+
+            AdjustImage = backgroundImage;
+        }
+
+
         Image resultImage = new Image(width, height);
 
-        for (int x = 0; x < width; x++) {
-            for (int y = 0; y < height; y++) {
-                // 获取原始像素
-                Color originalPixel = this.image.get(x, y);
-
-                // 如果像素位于边界矩形内并且颜色匹配，则用背景图片替换
-                if (x >= minX && x <= maxX && y >= minY && y <= maxY && originalPixel.equals(screenColour)) {
-                    // 背景图片中的对应像素
-                    int bgX = (x - minX) % backgroundImage.width();
-                    int bgY = (y - minY) % backgroundImage.height();
-                    Color bgPixel = backgroundImage.get(bgX, bgY);
-
-                    // 替换为背景图片的像素
-                    resultImage.set(x, y, bgPixel);
-                } else {
-                    // 保留原始像素
-                    resultImage.set(x, y, originalPixel);
-                }
-            }
-        }
+        replaceRegionWithAdjustImage(resultImage, AdjustImage, screenColour, minX, minY, maxX, maxY);
 
         return resultImage;
     }
 
-    // 辅助方法，检查坐标是否在图像范围内
-    private boolean isInBounds(int x, int y, int width, int height) {
-        return x >= 0 && x < width && y >= 0 && y < height;
+
+    public void tileAndReplace(Image resultImage, Image backgroundImage, int minX, int minY, int maxX, int maxY) {
+        int regionWidth = maxX - minX + 1;
+        int regionHeight = maxY - minY + 1;
+
+        // 遍历目标区域
+        for (int y = minY; y <= maxY; y++) {
+            for (int x = minX; x <= maxX; x++) {
+                // 计算平铺时 backgroundImage 中对应的像素坐标 (使用取模运算)
+                int bgX = (x - minX) % backgroundImage.width();
+                int bgY = (y - minY) % backgroundImage.height();
+
+                // 将平铺后的背景图像素替换到 resultImage 中
+                resultImage.setRGB(x, y, backgroundImage.getRGB(bgX, bgY));
+            }
+        }
     }
+
+    public void compressAndReplaceWithAverage(Image resultImage, Image backgroundImage, int minX, int minY, int maxX, int maxY) {
+        int regionWidth = maxX - minX + 1;
+        int regionHeight = maxY - minY + 1;
+
+        double xRatio = (double) backgroundImage.width() / regionWidth;
+        double yRatio = (double) backgroundImage.height() / regionHeight;
+
+        for (int y = minY; y <= maxY; y++) {
+            for (int x = minX; x <= maxX; x++) {
+
+                int startX = (int) ((x - minX) * xRatio);
+                int endX = (int) Math.min((x - minX + 1) * xRatio, backgroundImage.width());
+
+                int startY = (int) ((y - minY) * yRatio);
+                int endY = (int) Math.min((y - minY + 1) * yRatio, backgroundImage.height());
+
+
+                Color avgColor = calculateAverageColor(backgroundImage, startX, startY, endX, endY);
+
+
+                resultImage.setRGB(x, y, avgColor.getRGB());
+            }
+        }
+    }
+
+    private Color calculateAverageColor(Image image, int startX, int startY, int endX, int endY) {
+        int totalPixels = 0;
+        long sumRed = 0, sumGreen = 0, sumBlue = 0;
+
+        for (int y = startY; y < endY; y++) {
+            for (int x = startX; x < endX; x++) {
+                int rgb = image.getRGB(x, y);
+                Color color = new Color(rgb);
+
+                sumRed += color.getRed();
+                sumGreen += color.getGreen();
+                sumBlue += color.getBlue();
+                totalPixels++;
+            }
+        }
+
+        int avgRed = (int) (sumRed / totalPixels);
+        int avgGreen = (int) (sumGreen / totalPixels);
+        int avgBlue = (int) (sumBlue / totalPixels);
+
+        return new Color(avgRed, avgGreen, avgBlue);
+    }
+
+    public void replaceRegionWithAdjustImage(Image resultImage, Image adjustImage, Color screenColour, int minX, int minY, int maxX, int maxY) {
+        int regionWidth = maxX - minX + 1;
+        int regionHeight = maxY - minY + 1;
+
+        // 确保 adjustImage 与 resultImage 是同样大小的前提下，遍历最大区域
+        for (int y = minY; y <= maxY; y++) {
+            for (int x = minX; x <= maxX; x++) {
+                // 如果当前像素是 screenColour
+                if (getPixelColor(x, y).equals(screenColour)) {
+                    // 将 adjustImage 对应坐标的颜色替换到 resultImage 的同一位置
+                    resultImage.setRGB(x, y, adjustImage.getRGB(x, y));
+                }
+            }
+        }
+    }
+
+
+    private Color getPixelColor(int x, int y) {
+
+        int rgb = image.getRGB(x, y);
+        return new Color(rgb);
+    }
+
+
+    private int FindRegion(int startX, int startY, Color screenColour, int regionId) {
+
+        Queue<Point> queue = new LinkedList<>();
+        queue.add(new Point(startX, startY));
+        visited[startX][startY] = true;
+
+
+        int minX = startX, maxX = startX;
+        int minY = startY, maxY = startY;
+        int area = 0;
+
+
+        int[] dx = {-1, 1, 0, 0};
+        int[] dy = {0, 0, -1, 1};
+
+
+        while (!queue.isEmpty()) {
+            Point p = queue.poll();
+            int x = p.x;
+            int y = p.y;
+
+
+            minX = Math.min(minX, x);
+            maxX = Math.max(maxX, x);
+            minY = Math.min(minY, y);
+            maxY = Math.max(maxY, y);
+            area++;
+
+
+            for (int i = 0; i < 4; i++) {
+                int newX = x + dx[i];
+                int newY = y + dy[i];
+
+
+                if (newX >= 0 && newX < image.width() && newY >= 0 && newY < image.height() &&
+                        !visited[newX][newY] && getPixelColor(newX, newY).equals(screenColour)) {
+                    queue.add(new Point(newX, newY));
+                    visited[newX][newY] = true;
+                }
+            }
+        }
+
+
+        regionData.put(regionId, new int[]{area, minX, minY, maxX, maxY});
+        return area;
+    }
+
+
+
+    private int[] findLargestRegion() {
+        int maxArea = 0;
+        int[] maxRegion = null;
+
+
+        for (Map.Entry<Integer, int[]> entry : regionData.entrySet()) {
+            int area = entry.getValue()[0];
+            if (area > maxArea) {
+                maxArea = area;
+                maxRegion = entry.getValue();
+            }
+        }
+
+        return maxRegion;
+    }
+
+
 
     /* ===== TASK 5 ===== */
 
