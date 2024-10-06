@@ -194,41 +194,44 @@ public class ImageTransformer {
         int width = this.width;
         int height = this.height;
 
-
         Image denoisedImage = new Image(width, height);
-
-
         for (int row = 0; row < height; row++) {
             for (int col = 0; col < width; col++) {
-                // Get the median value of this pixel
+                // 计算邻居的中值颜色
                 Color medianColor = getMedianNeighborColor(col, row);
 
-                // Set it with median value
-                denoisedImage.setRGB(col, row, medianColor.getRGB());
+                // 设置新的颜色到去噪后的图像上
+                 denoisedImage.setRGB(col, row, medianColor.getRGB());
             }
         }
 
         return denoisedImage;
     }
 
-    private Color getMedianNeighborColor(int x, int y) {
+    // 计算某个像素的邻居区域中的中值颜色
+    private Color getMedianNeighborColor(int col, int row) {
         List<Integer> redValues = new ArrayList<>();
         List<Integer> greenValues = new ArrayList<>();
         List<Integer> blueValues = new ArrayList<>();
 
-        // Traverse the pixel's neighbors in a 3x3 grid
-        for (int i = 0; i <= 2; i++) {
-            for (int j = 0; j <= 2; j++) {
-                int neighborX = x + i;
-                int neighborY = y + j;
+        int width = this.width;
+        int height = this.height;
 
+        // 遍历邻居，包括自己
+        for (int i = -1; i <= 1; i++) {
+            for (int j = -1; j <= 1; j++) {
+                int neighborRow = row + i;
+                int neighborCol = col + j;
 
-                if (neighborX >= 0 && neighborX < this.width && neighborY >= 0 && neighborY < this.height) {
+                // 确保邻居像素在图像范围内
+                if (neighborRow >= 0 && neighborRow < height &&
+                        neighborCol >= 0 && neighborCol < width) {
 
-                    int neighborPixel = this.image.getRGB(neighborX, neighborY);
-                    Color neighborColor = new Color(neighborPixel);
+                    // 获取邻居像素的颜色
+                    int rgb =  image.getRGB(neighborCol, neighborRow);
+                    Color neighborColor = new Color(rgb);
 
-
+                    // 分别添加红、绿、蓝值到对应的列表
                     redValues.add(neighborColor.getRed());
                     greenValues.add(neighborColor.getGreen());
                     blueValues.add(neighborColor.getBlue());
@@ -236,43 +239,23 @@ public class ImageTransformer {
             }
         }
 
-        // Calculate the middle value of color
+        // 分别计算红、绿、蓝的中值
         int medianRed = getMedianValue(redValues);
         int medianGreen = getMedianValue(greenValues);
         int medianBlue = getMedianValue(blueValues);
 
-
+        // 返回新的颜色
         return new Color(medianRed, medianGreen, medianBlue);
     }
 
+    // 计算列表中的中值
     private int getMedianValue(List<Integer> values) {
-        int size = values.size();
-
-
-        for (int i = 0; i < size - 1; i++) {
-            int minIndex = i;
-            for (int j = i + 1; j < size; j++) {
-                if (values.get(j) < values.get(minIndex)) {
-                    minIndex = j;
-                }
-            }
-
-            int temp = values.get(i);
-            values.set(i, values.get(minIndex));
-            values.set(minIndex, temp);
-        }
-
-
-        if (size % 2 == 1) {
-
-            return values.get(size / 2);
-        }
-
-        else {
-
-            return (values.get(size / 2 - 1) + values.get(size / 2)) / 2;
-        }
+        Collections.sort(values);
+        int middle = values.size() / 2;
+        return values.get(middle);
     }
+
+
 
     public Image weather() {
         int width = this.width;
