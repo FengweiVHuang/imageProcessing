@@ -421,24 +421,22 @@ public class ImageTransformer {
         return resultImage;
     }
 
-
+    // Tile
     public void tileAndReplace(Image resultImage, Image backgroundImage, int minX, int minY, int maxX, int maxY) {
-        int regionWidth = maxX - minX + 1;
-        int regionHeight = maxY - minY + 1;
 
-        // 遍历目标区域
         for (int y = minY; y <= maxY; y++) {
             for (int x = minX; x <= maxX; x++) {
-                // 计算平铺时 backgroundImage 中对应的像素坐标 (使用取模运算)
+
                 int bgX = (x - minX) % backgroundImage.width();
                 int bgY = (y - minY) % backgroundImage.height();
 
-                // 将平铺后的背景图像素替换到 resultImage 中
+
                 resultImage.setRGB(x, y, backgroundImage.getRGB(bgX, bgY));
             }
         }
     }
 
+    // Compress
     public void compressAndReplaceWithAverage(Image resultImage, Image backgroundImage, int minX, int minY, int maxX, int maxY) {
         int regionWidth = maxX - minX + 1;
         int regionHeight = maxY - minY + 1;
@@ -487,9 +485,8 @@ public class ImageTransformer {
         return new Color(avgRed, avgGreen, avgBlue);
     }
 
+
     public void replaceRegionWithAdjustImage(Image resultImage, Image adjustImage, Color screenColour, int minX, int minY, int maxX, int maxY) {
-        int regionWidth = maxX - minX + 1;
-        int regionHeight = maxY - minY + 1;
 
         // 确保 adjustImage 与 resultImage 是同样大小的前提下，遍历最大区域
         for (int y = minY; y <= maxY; y++) {
