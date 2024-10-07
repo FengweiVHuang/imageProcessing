@@ -88,20 +88,20 @@ public class ImageTransformer {
         int width = this.width;
         int height = this.height;
 
-        // Create a new image to store the mirrored result
+
         Image mirroredImage = new Image(width, height);
 
 
         for (int row = 0; row < height; row++) {
             for (int col = 0; col <= width / 2; col++) {
-                // The mirrored symmetrical position
+
                 int mirroredCol = width - col - 1;
 
-                // Get the color value of the current pixel and the symmetrical pixel
+
                 int originalPixel = this.image.getRGB(col, row);
                 int mirroredPixel = this.image.getRGB(mirroredCol, row);
 
-                // Swap the colors of the left and right pixels
+                // Swap
                 mirroredImage.setRGB(col, row, mirroredPixel);
                 mirroredImage.setRGB(mirroredCol, row, originalPixel);
             }
@@ -124,24 +124,24 @@ public class ImageTransformer {
         Image negativeImage = new Image(width, height);
         for (int row = 0; row < height; row++) {
             for (int col = 0; col < width; col++) {
-                // Get the current pixel color
+
                 int originalPixel = this.image.getRGB(col, row);
                 Color originalColor = new Color(originalPixel);
 
-                // Extract the RGB values
+
                 int r = originalColor.getRed();
                 int g = originalColor.getGreen();
                 int b = originalColor.getBlue();
 
-                // Calculate the negative RGB values
+
                 int negR = 255 - r;
                 int negG = 255 - g;
                 int negB = 255 - b;
 
-                // Create a new Color object with the negative RGB values
+
                 Color negativeColor = new Color(negR, negG, negB);
 
-                // Set the new pixel color in the negative image
+
                 negativeImage.setRGB(col, row, negativeColor.getRGB());
             }
         }
@@ -168,19 +168,19 @@ public class ImageTransformer {
 
         for (int row = 0; row < height; row++) {
             for (int col = 0; col < width; col++) {
-                // Get the current pixel color
+
                 int originalPixel = this.image.getRGB(col, row);
                 Color originalColor = new Color(originalPixel);
 
-                // Posterize the red, green, and blue components independently
+
                 int r = posterizeChannel(originalColor.getRed());
                 int g = posterizeChannel(originalColor.getGreen());
                 int b = posterizeChannel(originalColor.getBlue());
 
-                // Create a new Color object with the posterized RGB values
+
                 Color posterizedColor = new Color(r, g, b);
 
-                // Set the new pixel color in the posterized image
+
                 posterizedImage.setRGB(col, row, posterizedColor.getRGB());
             }
         }
@@ -240,19 +240,24 @@ public class ImageTransformer {
         }
 
 
-        int medianRed = getMedianValue(redValues);
-        int medianGreen = getMedianValue(greenValues);
-        int medianBlue = getMedianValue(blueValues);
+        int medianRed = (int) getMedianValue(redValues);
+        int medianGreen =(int) getMedianValue(greenValues);
+        int medianBlue =(int) getMedianValue(blueValues);
 
 
         return new Color(medianRed, medianGreen, medianBlue);
     }
 
 
-    private int getMedianValue(List<Integer> values) {
+    private double getMedianValue(List<Integer> values) {
         Collections.sort(values);
         int middle = values.size() / 2;
-        return values.get(middle);
+
+        if (values.size() % 2 == 1) {
+            return values.get(middle);
+        } else {
+            return (values.get(middle - 1) + values.get(middle)) / 2.0;
+        }
     }
 
 
@@ -299,16 +304,16 @@ public class ImageTransformer {
         int width = this.width;
         int height = this.height;
 
-        // Create a new image to store the block painting effect
+
         Image blockPaintedImage = new Image(width, height);
 
-        // Traverse the image, dividing it into blocks of blockSize
+
         for (int row = 0; row < height; row += blockSize) {
             for (int col = 0; col < width; col += blockSize) {
-                // Get the average color of the current block
+
                 Color averageColor = getBlockAverageColor(col, row, blockSize);
 
-                // Set all pixels in the current block to the average color
+
                 for (int i = row; i < row + blockSize && i < height; i++) {
                     for (int j = col; j < col + blockSize && j < width; j++) {
                         blockPaintedImage.setRGB(j, i, averageColor.getRGB());
@@ -324,7 +329,7 @@ public class ImageTransformer {
         int totalR = 0, totalG = 0, totalB = 0;
         int count = 0;
 
-        // Calculate the average value of the pixels in the block
+
         for (int i = startY; i < startY + blockSize && i < this.height; i++) {
             for (int j = startX; j < startX + blockSize && j < this.width; j++) {
                 int pixel = this.image.getRGB(j, i);
@@ -337,7 +342,7 @@ public class ImageTransformer {
             }
         }
 
-        // Compute the average value for each color channel
+
         int avgR = totalR / count;
         int avgG = totalG / count;
         int avgB = totalB / count;
@@ -528,4 +533,12 @@ public class ImageTransformer {
         // TODO: Implement this method
         return null;
     }
+
+    // determines the angle by which the image should
+// be rotated to get the text aligned
+    public double getTextAlignmentAngle() {
+// TODO: Implement this method
+        return 0; // TODO: Change this
+    }
+
 }

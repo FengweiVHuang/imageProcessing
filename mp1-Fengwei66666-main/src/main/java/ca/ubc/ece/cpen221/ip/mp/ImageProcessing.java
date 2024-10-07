@@ -59,9 +59,9 @@ public class ImageProcessing {
         }
 
 
-        double dotProduct = 0.0;
-        double magnitude1 = 0.0;
-        double magnitude2 = 0.0;
+        double dotProduct = 0.00;
+        double magnitude1 = 0.00;
+        double magnitude2 = 0.00;
 
         for (int i = 0; i < N; i++) {
             dotProduct += vector1[i] * vector2[i];
@@ -88,7 +88,7 @@ public class ImageProcessing {
         int blue = color.getBlue();
 
 
-        return 0.2989 * red + 0.5870 * green + 0.1140 * blue;
+        return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
     }
 
 
@@ -96,16 +96,16 @@ public class ImageProcessing {
     public static List<Image> bestMatch(Image img, List<Image> matchingCandidates) {
 
         List<Double> similarities = new ArrayList<>();
-        // Used to store a list of original images
+
         List<Image> sortedImages = new ArrayList<>(matchingCandidates);
 
-        // Traverse candidate images, calculate similarity and store
+        // Traverse
         for (Image candidate : matchingCandidates) {
             double similarity = cosineSimilarity(img, candidate);
             similarities.add(similarity);
         }
 
-        // Sort the list of images by similarity
+        // Sort
         for (int i = 0; i < sortedImages.size() - 1; i++) {
             for (int j = i + 1; j < sortedImages.size(); j++) {
                 if (similarities.get(i) < similarities.get(j)) {
@@ -114,7 +114,7 @@ public class ImageProcessing {
                     sortedImages.set(i, sortedImages.get(j));
                     sortedImages.set(j, tempImg);
 
-                    // Exchange the corresponding similarity
+                    // Exchange
                     double tempSim = similarities.get(i);
                     similarities.set(i, similarities.get(j));
                     similarities.set(j, tempSim);
