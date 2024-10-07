@@ -380,22 +380,18 @@ public class ImageTransformer {
 
         Image AdjustImage = new Image(regionWidth,regionHeight);
 
+    while(backgroundImage.width() != regionWidth || backgroundImage.height() != regionHeight) {
 
         if (backgroundImage.width() > regionWidth || backgroundImage.height() > regionHeight) {
 
-            compressAndReplaceWithAverage( AdjustImage,  backgroundImage,  minX,  minY,  maxX,  maxY);
+            Cut(AdjustImage, backgroundImage,  minX,  minY,  maxX, maxY);
         }
 
         if (backgroundImage.width() < regionWidth || backgroundImage.height() < regionHeight) {
 
-            tileAndReplace(AdjustImage,  backgroundImage,  minX,  minY,  maxX,  maxY);
+            tileAndReplace(AdjustImage, backgroundImage, minX, minY, maxX, maxY);
         }
-
-        else {
-
-            AdjustImage = backgroundImage;
-        }
-
+    }
 
         Image resultImage = new Image(width, height);
 
@@ -419,54 +415,22 @@ public class ImageTransformer {
         }
     }
 
-    // Compress
-    public void compressAndReplaceWithAverage(Image resultImage, Image backgroundImage, int minX, int minY, int maxX, int maxY) {
-        int regionWidth = maxX - minX + 1;
-        int regionHeight = maxY - minY + 1;
+    // Cut
+    public static void Cut(Image adjustImage, Image backgroundImage,int minX, int minY, int maxX, int maxY) {
+        int Xrange = maxX - minX;
+        int Yrange = maxY - minY;
 
-        double xRatio = (double) backgroundImage.width() / regionWidth;
-        double yRatio = (double) backgroundImage.height() / regionHeight;
-
-        for (int y = minY; y <= maxY; y++) {
-            for (int x = minX; x <= maxX; x++) {
-
-                int startX = (int) ((x - minX) * xRatio);
-                int endX = (int) Math.min((x - minX + 1) * xRatio, backgroundImage.width());
-
-                int startY = (int) ((y - minY) * yRatio);
-                int endY = (int) Math.min((y - minY + 1) * yRatio, backgroundImage.height());
-
-
-                Color avgColor = calculateAverageColor(backgroundImage, startX, startY, endX, endY);
-
-
-                resultImage.setRGB(x, y, avgColor.getRGB());
+        for (int x = 0; x < Xrange; x++) {
+            for (int y = 0; y < Yrange; y++) {
+                int backgroundPixel = backgroundImage.getRGB(x, y);
+                    adjustImage.setRGB(minX, minY, backgroundPixel);
+                    minY++;
+                }
+            minX++;
             }
-        }
-    }
 
-    private Color calculateAverageColor(Image image, int startX, int startY, int endX, int endY) {
-        int totalPixels = 0;
-        long sumRed = 0, sumGreen = 0, sumBlue = 0;
-
-        for (int y = startY; y < endY; y++) {
-            for (int x = startX; x < endX; x++) {
-                int rgb = image.getRGB(x, y);
-                Color color = new Color(rgb);
-
-                sumRed += color.getRed();
-                sumGreen += color.getGreen();
-                sumBlue += color.getBlue();
-                totalPixels++;
-            }
         }
 
-        int avgRed = (int) (sumRed / totalPixels);
-        int avgGreen = (int) (sumGreen / totalPixels);
-        int avgBlue = (int) (sumBlue / totalPixels);
-
-        return new Color(avgRed, avgGreen, avgBlue);
-    }
 
 
     public void replaceRegionWithAdjustImage(Image resultImage, Image adjustImage, Color screenColour, int minX, int minY, int maxX, int maxY) {
