@@ -94,7 +94,7 @@ public class ImageProcessing {
 
 
     public static List<Image> bestMatch(Image img, List<Image> matchingCandidates) {
-        // Used to store candidate images
+
         List<Double> similarities = new ArrayList<>();
         // Used to store a list of original images
         List<Image> sortedImages = new ArrayList<>(matchingCandidates);

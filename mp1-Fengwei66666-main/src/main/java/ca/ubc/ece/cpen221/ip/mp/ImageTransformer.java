@@ -197,10 +197,10 @@ public class ImageTransformer {
         Image denoisedImage = new Image(width, height);
         for (int row = 0; row < height; row++) {
             for (int col = 0; col < width; col++) {
-                // 计算邻居的中值颜色
+
                 Color medianColor = getMedianNeighborColor(col, row);
 
-                // 设置新的颜色到去噪后的图像上
+
                  denoisedImage.setRGB(col, row, medianColor.getRGB());
             }
         }
@@ -208,7 +208,7 @@ public class ImageTransformer {
         return denoisedImage;
     }
 
-    // 计算某个像素的邻居区域中的中值颜色
+
     private Color getMedianNeighborColor(int col, int row) {
         List<Integer> redValues = new ArrayList<>();
         List<Integer> greenValues = new ArrayList<>();
@@ -217,21 +217,21 @@ public class ImageTransformer {
         int width = this.width;
         int height = this.height;
 
-        // 遍历邻居，包括自己
+
         for (int i = -1; i <= 1; i++) {
             for (int j = -1; j <= 1; j++) {
                 int neighborRow = row + i;
                 int neighborCol = col + j;
 
-                // 确保邻居像素在图像范围内
+
                 if (neighborRow >= 0 && neighborRow < height &&
                         neighborCol >= 0 && neighborCol < width) {
 
-                    // 获取邻居像素的颜色
+
                     int rgb =  image.getRGB(neighborCol, neighborRow);
                     Color neighborColor = new Color(rgb);
 
-                    // 分别添加红、绿、蓝值到对应的列表
+
                     redValues.add(neighborColor.getRed());
                     greenValues.add(neighborColor.getGreen());
                     blueValues.add(neighborColor.getBlue());
@@ -239,16 +239,16 @@ public class ImageTransformer {
             }
         }
 
-        // 分别计算红、绿、蓝的中值
+
         int medianRed = getMedianValue(redValues);
         int medianGreen = getMedianValue(greenValues);
         int medianBlue = getMedianValue(blueValues);
 
-        // 返回新的颜色
+
         return new Color(medianRed, medianGreen, medianBlue);
     }
 
-    // 计算列表中的中值
+
     private int getMedianValue(List<Integer> values) {
         Collections.sort(values);
         int middle = values.size() / 2;
@@ -380,18 +380,17 @@ public class ImageTransformer {
 
         Image AdjustImage = new Image(regionWidth,regionHeight);
 
-    while(backgroundImage.width() != regionWidth || backgroundImage.height() != regionHeight) {
 
-        if (backgroundImage.width() < regionWidth || backgroundImage.height() < regionHeight) {
+            if (backgroundImage.width() < regionWidth || backgroundImage.height() < regionHeight) {
 
-            tileAndReplace(AdjustImage, backgroundImage, minX, minY, maxX, maxY);
-        }
+                tileAndReplace(AdjustImage, backgroundImage, minX, minY, maxX, maxY);
+            }
 
-        if (backgroundImage.width() > regionWidth || backgroundImage.height() > regionHeight) {
+            if (backgroundImage.width() >= regionWidth || backgroundImage.height() >= regionHeight) {
 
-            Cut(AdjustImage, backgroundImage,  minX,  minY,  maxX, maxY);
-        }
-    }
+                Cut(AdjustImage, backgroundImage,  minX,  minY,  maxX, maxY);
+            }
+
 
         Image resultImage = new Image(width, height);
 
@@ -432,16 +431,17 @@ public class ImageTransformer {
         }
 
 
-
     public void replaceRegionWithAdjustImage(Image resultImage, Image adjustImage, Color screenColour, int minX, int minY, int maxX, int maxY) {
 
-        // 确保 adjustImage 与 resultImage 是同样大小的前提下，遍历最大区域
         for (int y = minY; y <= maxY; y++) {
             for (int x = minX; x <= maxX; x++) {
-                // 如果当前像素是 screenColour
+
                 if (getPixelColor(x, y).equals(screenColour)) {
-                    // 将 adjustImage 对应坐标的颜色替换到 resultImage 的同一位置
+
                     resultImage.setRGB(x, y, adjustImage.getRGB(x, y));
+                }
+                else{
+                    resultImage.setRGB(x, y, this.image.getRGB(x, y));
                 }
             }
         }
