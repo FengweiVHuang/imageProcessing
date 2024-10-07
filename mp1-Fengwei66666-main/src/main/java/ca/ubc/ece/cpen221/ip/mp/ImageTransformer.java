@@ -382,14 +382,14 @@ public class ImageTransformer {
 
     while(backgroundImage.width() != regionWidth || backgroundImage.height() != regionHeight) {
 
-        if (backgroundImage.width() > regionWidth || backgroundImage.height() > regionHeight) {
-
-            Cut(AdjustImage, backgroundImage,  minX,  minY,  maxX, maxY);
-        }
-
         if (backgroundImage.width() < regionWidth || backgroundImage.height() < regionHeight) {
 
             tileAndReplace(AdjustImage, backgroundImage, minX, minY, maxX, maxY);
+        }
+
+        if (backgroundImage.width() > regionWidth || backgroundImage.height() > regionHeight) {
+
+            Cut(AdjustImage, backgroundImage,  minX,  minY,  maxX, maxY);
         }
     }
 
