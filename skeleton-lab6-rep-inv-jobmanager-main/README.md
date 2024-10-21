@@ -1,0 +1,1 @@
+[![Lab 6](img/lab-6-overview.png)](https://ubc-ece.craft.me/BNO9dpQC4eKIPe)
